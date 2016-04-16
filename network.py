@@ -1,6 +1,12 @@
 
 import numpy as np
 
+# matplotlib workaround for ox MAX in virualenv
+
+
+
+
+from data import vectorized_result
 
 class Network(object):
 
@@ -42,7 +48,7 @@ class Network(object):
         return a
 
      
-    def SGD(self, training_data, epochs, mini_batch_size, learning_rate):
+    def SGD(self, training_data, epochs, mini_batch_size, learning_rate, validation_data):
         """
            input
            -----
@@ -99,14 +105,22 @@ class Network(object):
 
         training_size = len(training_data)
         for epoch in range(epochs):
-
+            
             np.random.shuffle(training_data)
             mini_batches = [ training_data[index: index + mini_batch_size]  for index in xrange(0, training_size, mini_batch_size)]
            
             for mini_batch in mini_batches:
                  self.updateMiniBatch(mini_batch, learning_rate)
-
-
+            
+        # print 
+        sum = 0
+        if validation_data != None :
+            for x, y in validation_data:
+                o = np.argmax(self.feedforward(x))
+                if o == y:
+                    sum = sum + 1
+        print "validaton data size :", len(validation_data)
+        print " score :",  sum 
 
     def updateMiniBatch(self, mini_batch, eta):
     	"""
@@ -118,8 +132,8 @@ class Network(object):
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         
         for x,y in mini_batch:
-            delta_nabla_b, delta_nabla_w = self.backprop(x, y)
-            #print delta_nabla_b, delta_nabla_w
+            delta_nabla_b, delta_nabla_w=self.backprop(x, y)
+            
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
         self.weights = [w-(eta/len(mini_batch))*nw
@@ -132,24 +146,37 @@ class Network(object):
 
             
     def backprop(self, x, y):
+        """Return a tuple ``(nabla_b, nabla_w)`` representing the
+        gradient for the cost function C_x.  ``nabla_b`` and
+        ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
+        to ``self.biases`` and ``self.weights``."""
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
-        
+        # feedforward
         activation = x
         activations = [x] # list to store all the activations, layer by layer
         zs = [] # list to store all the z vectors, layer by layer
         for b, w in zip(self.biases, self.weights):
+
             z = np.dot(w, activation)+b
             zs.append(z)
             activation = sigmoid(z)
             activations.append(activation)
         # backward pass
+        delta = self.cost_derivative(activations[-1], y) * \
+            sigmoid_prime(zs[-1])
+        
+        
+        
 
-        delta = self.cost_derivative(activations[-1], y) * sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
-
-
+        # Note that the variable l in the loop below is used a little
+        # differently to the notation in Chapter 2 of the book.  Here,
+        # l = 1 means the last layer of neurons, l = 2 is the
+        # second-last layer, and so on.  It's a renumbering of the
+        # scheme in the book, used here to take advantage of the fact
+        # that Python can use negative indices in lists.
         for l in xrange(2, self.num_layers):
             z = zs[-l]
             sp = sigmoid_prime(z)

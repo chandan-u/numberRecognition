@@ -1,0 +1,2 @@
+validaton data size : 10000
+score : 9499

@@ -8,7 +8,7 @@ import numpy as np
 
 def load_data():
 
-    f = gzip.open('./neural-networks-and-deep-learning-master/data/mnist.pkl.gz', 'rb')
+    f = gzip.open('./data/mnist.pkl.gz', 'rb')
     training_data, validation_data, test_data = pickle.load(f)
     f.close()
     return (training_data, validation_data, test_data)
@@ -51,5 +51,6 @@ def vectorized_result(j):
     (0...9) into a corresponding desired output from the neural
     network."""
     e = np.zeros((10, 1))
+    j = int(j)
     e[j] = 1.0
     return e
